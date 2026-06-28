@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coming Soon — XYZ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    /* ── Theme tokens ── */
+    body.theme-light {
+      --color-bg:            #f5f0e8;
+      --color-primary:       #4a7c59;
+      --color-accent:        #2d5a3d;
+      --color-text:          #2c2c2c;
+      --color-muted:         #6b7280;
+      --color-card:          rgba(255, 255, 255, 0.78);
+      --color-footer-bg:     #e8e0d0;
+      --color-imprint:       rgba(60, 45, 30, 0.18);   /* dark earth tone imprints */
+      --color-ripple:        #f5f0e8;
+    }
+    body.theme-dark {
+      --color-bg:            #1a2e1f;
+      --color-primary:       #74c69d;
+      --color-accent:        #52b788;
+      --color-text:          #f0ebe0;
+      --color-muted:         #a0aec0;
+      --color-card:          rgba(20, 40, 25, 0.82);
+      --color-footer-bg:     #111f14;
+      --color-imprint:       rgba(200, 220, 190, 0.15); /* light muted imprints */
+      --color-ripple:        #1a2e1f;
+    }
+
+    body { background-color: var(--color-bg); color: var(--color-text); }
+
+    /* ── Footprint canvas sits behind everything ── */
+    #footprint-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Full page layout ── */
+    #page-wrapper {
+      position: relative;
+      z-index: 1000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem);
+      gap: clamp(1rem, 2.5vw, 1.75rem);
+    }
+
+    /* ── Hero card ── */
+    #hero-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: min(680px, 92vw);
+      background: var(--color-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 1.5rem;
+      padding: clamp(2rem, 5vw, 3.5rem);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.13);
+    }
+
+    #hero-title {
+      font-size: clamp(1.4rem, 3.8vw, 2.4rem);
+      font-weight: 800;
+      color: var(--color-primary);
+      line-height: 1.25;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      margin-bottom: 1rem;
+    }
+
+    #hero-subtitle {
+      font-size: clamp(0.93rem, 2.1vw, 1.12rem);
+      color: var(--color-text);
+      line-height: 1.8;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    #hero-tagline {
+      font-size: clamp(0.83rem, 1.7vw, 0.98rem);
+      color: var(--color-accent);
+      font-style: italic;
+      margin-top: 1.25rem;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    /* ── Social handles ── */
+    #social-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.6rem, 2vw, 1.2rem);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .social-handle-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: clamp(0.83rem, 1.9vw, 0.98rem);
+      color: var(--color-primary);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border: 1.5px solid var(--color-primary);
+      border-radius: 9999px;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+      white-space: nowrap;
+    }
+    .social-handle-link:hover {
+      background: var(--color-primary);
+      color: var(--color-bg);
+      transform: translateY(-2px);
+    }
+
+    /* ── Theme toggle buttons ── */
+    #theme-toggle-section {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      position: relative;
+      z-index: 1001;
+    }
+
+    .theme-toggle-button {
+      padding: 0.55rem 1.5rem;
+      border-radius: 9999px;
+      border: 2px solid var(--color-primary);
+      background: transparent;
+      color: var(--color-primary);
+      font-weight: 700;
+      font-size: clamp(0.78rem, 1.7vw, 0.93rem);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+    .theme-toggle-button:hover,
+    .theme-toggle-button.active-theme {
+      background: var(--color-primary);
+      color: var(--color-bg);
+    }
+    .theme-toggle-button:focus-visible {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 3px;
+    }
+
+    /* ── Theme ripple overlay ── */
+    #theme-ripple-overlay {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: scale(0);
+      opacity: 0;
+    }
+    #theme-ripple-overlay.ripple-is-animating {
+      animation: ripple-expand-outward 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes ripple-expand-outward {
+      0%   { transform: scale(0); opacity: 0.95; }
+      100% { transform: scale(8); opacity: 0; }
+    }
+
+    /* ── Footer ── */
+    #footer-section {
+      width: 100%;
+      max-width: 900px;
+      background: var(--color-footer-bg);
+      border-radius: 1rem 1rem 0 0;
+      padding: clamp(1rem, 3vw, 1.75rem) clamp(1rem, 4vw, 2.5rem);
+      text-align: center;
+    }
+
+    #footer-legal-links-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.4rem;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-legal-link {
+      font-size: clamp(0.72rem, 1.5vw, 0.85rem);
+      color: var(--color-muted);
+      text-decoration: none;
+      transition: color 0.2s ease;
+      white-space: nowrap;
+    }
+    .footer-legal-link:hover { color: var(--color-primary); text-decoration: underline; }
+
+    #footer-copyright-text {
+      font-size: clamp(0.68rem, 1.4vw, 0.78rem);
+      color: var(--color-muted);
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body class="theme-light">
+
+<!-- Ripple overlay for theme transition effect -->
+<div id="theme-ripple-overlay"></div>
+
+<!-- Canvas for background footprint imprint animations -->
+<canvas id="footprint-canvas"></canvas>
+
+<!-- Main page wrapper -->
+<div id="page-wrapper">
+
+  <!-- Hero section -->
+  <section id="hero-section" aria-label="Coming Soon Message">
+    <h1 id="hero-title"></h1>
+    <p id="hero-subtitle"></p>
+    <p id="hero-tagline"></p>
+  </section>
+
+  <!-- Social and contact handles -->
+  <nav id="social-section" aria-label="Social Media and Contact Links"></nav>
+
+  <!-- Light / Dark theme toggle -->
+  <div id="theme-toggle-section" aria-label="Theme Selection">
+    <button
+      class="theme-toggle-button active-theme"
+      id="btn-light-mode-toggle"
+      onclick="handleThemeToggleClick('light', this)"
+      aria-pressed="true"
+    >☀️ Light Mode</button>
+    <button
+      class="theme-toggle-button"
+      id="btn-dark-mode-toggle"
+      onclick="handleThemeToggleClick('dark', this)"
+      aria-pressed="false"
+    >🌙 Dark Mode</button>
+  </div>
+
+  <!-- Footer with legal links -->
+  <footer id="footer-section" aria-label="Site Footer">
+    <div id="footer-legal-links-container"></div>
+    <p id="footer-copyright-text"></p>
+  </footer>
+
+</div>
+
+<script>
+  /* ═══════════════════════════════════════════════════════════════════
+     SITE_CONFIG — The single source of truth for ALL page content.
+     Edit values here only. Never touch the logic below this object.
+  ═══════════════════════════════════════════════════════════════════ */
+  const SITE_CONFIG = {
+
+    hero: {
+      title:    "Don't miss this on your next visit to Assam! 🌊🧗‍♀️",
+      subtitle: "Thanks for your curiosity! We're crafting something special — an adventure platform that respects both the thrill-seeker in you and the planet we explore. We're laying the groundwork right now, and we can't wait to welcome you when we launch. In the meantime, follow us or reach out if you'd like early access.",
+      tagline:  "Great things take time — and this will be worth the wait! 🌿"
+    },
+
+    social: [
+      { label: "Instagram", icon: "📸", href: "https://instagram.com/xyz" },
+      { label: "WhatsApp",  icon: "💬", href: "https://wa.me/918638121520"             },
+      { label: "Call Us",   icon: "📞", href: "tel:+918638121520"                       }
+    ],
+
+    footer: {
+      legalLinks: [
+        { label: "Terms & Conditions", href: "#terms"      },
+        { label: "Refund Policy",      href: "#refund"     },
+        { label: "Privacy Policy",     href: "#privacy"    },
+        { label: "Cookie Policy",      href: "#cookies"    },
+        { label: "Disclaimer",         href: "#disclaimer" }
+      ],
+      copyrightText: "© 2026 Bipul Sharma . All rights reserved. | www.xyz.com"
+    },
+
+    animation: {
+      maximumSimultaneousImprints: 16,   /* max imprints visible at once */
+      imprintMinSizePx:            28,   /* smallest imprint scale */
+      imprintMaxSizePx:            72,   /* largest imprint scale */
+      fadeInDurationMs:            900,  /* fade-in duration */
+      holdVisibleDurationMs:       1800, /* how long imprint stays fully visible */
+      fadeOutDurationMs:           1000, /* fade-out duration */
+      newImprintSpawnIntervalMs:   420,  /* delay between each new imprint */
+      heroSafetyBufferPx:          50    /* pixel buffer around hero zone */
+    }
+
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════
+     DOM POPULATION — Render all config content into the HTML structure
+  ═══════════════════════════════════════════════════════════════════ */
+
+  /** Inject hero section text content from SITE_CONFIG */
+  function populateHeroSectionContent() {
+    document.getElementById("hero-title").textContent    = SITE_CONFIG.hero.title;
+    document.getElementById("hero-subtitle").textContent = SITE_CONFIG.hero.subtitle;
+    document.getElementById("hero-tagline").textContent  = SITE_CONFIG.hero.tagline;
+  }
+
+  /** Build and inject social handle anchor elements from SITE_CONFIG */
+  function populateSocialHandleLinks() {
+    const socialContainerElement = document.getElementById("social-section");
+    SITE_CONFIG.social.forEach(function(socialHandleItem) {
+      const socialAnchorElement       = document.createElement("a");
+      socialAnchorElement.href        = socialHandleItem.href;
+      socialAnchorElement.className   = "social-handle-link";
+      socialAnchorElement.target      = "_blank";
+      socialAnchorElement.rel         = "noopener noreferrer";
+      //socialAnchorElement.innerHTML   = <span aria-hidden="true">${socialHandleItem.icon}</span><span>${socialHandleItem.label}</span>;
+      socialContainerElement.appendChild(socialAnchorElement);
+    });
+  }
+
+  /** Build and inject footer legal links and copyright from SITE_CONFIG */
+  function populateFooterContent() {
+    const footerLinksContainerElement = document.getElementById("footer-legal-links-container");
+    SITE_CONFIG.footer.legalLinks.forEach(function(legalLinkItem) {
+      const legalAnchorElement      = document.createElement("a");
+      legalAnchorElement.href       = legalLinkItem.href;
+      legalAnchorElement.className  = "footer-legal-link";
+      legalAnchorElement.textContent = legalLinkItem.label;
+      footerLinksContainerElement.appendChild(legalAnchorElement);
+    });
+    document.getElementById("footer-copyright-text").textContent = SITE_CONFIG.footer.copyrightText;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THEME RIPPLE ENGINE — Circular reveal from button click origin
+  ═══════════════════════════════════════════════════════════════════ */
+
+  /** Handle theme button click — trigger ripple then apply new theme */
+  function handleThemeToggleClick(selectedThemeName, clickedButtonElement) {
+    const rippleOverlayElement   = document.getElementById("theme-ripple-overlay");
+    const buttonBoundingRect     = clickedButtonElement.getBoundingClientRect();
+    const rippleOriginCenterX    = buttonBoundingRect.left + buttonBoundingRect.width  / 2;
+    const rippleOriginCenterY    = buttonBoundingRect.top  + buttonBoundingRect.height / 2;
+    const rippleInitialDiameter  = Math.max(window.innerWidth, window.innerHeight) * 0.45;
+
+    /* Position the ripple overlay centered on the clicked button */
+    rippleOverlayElement.style.width           = rippleInitialDiameter + "px";
+    rippleOverlayElement.style.height          = rippleInitialDiameter + "px";
+    rippleOverlayElement.style.left            = (rippleOriginCenterX - rippleInitialDiameter / 2) + "px";
+    rippleOverlayElement.style.top             = (rippleOriginCenterY - rippleInitialDiameter / 2) + "px";
+    rippleOverlayElement.style.backgroundColor = getComputedStyle(document.body).getPropertyValue("--color-ripple").trim();
+
+    /* Re-trigger CSS animation by removing and re-adding the class */
+    rippleOverlayElement.classList.remove("ripple-is-animating");
+    void rippleOverlayElement.offsetWidth; /* force DOM reflow to restart animation */
+    rippleOverlayElement.classList.add("ripple-is-animating");
+
+    /* Apply theme slightly after ripple starts for smooth visual effect */
+    setTimeout(function() {
+      applyThemeToBody(selectedThemeName);
+    }, 200);
+
+    /* Update aria-pressed and active class on toggle buttons */
+    document.querySelectorAll(".theme-toggle-button").forEach(function(themeButtonElement) {
+      themeButtonElement.classList.remove("active-theme");
+      themeButtonElement.setAttribute("aria-pressed", "false");
+    });
+    clickedButtonElement.classList.add("active-theme");
+    clickedButtonElement.setAttribute("aria-pressed", "true");
+  }
+
+  /** Swap theme class on body element */
+  function applyThemeToBody(selectedThemeName) {
+    document.body.classList.remove("theme-light", "theme-dark");
+    document.body.classList.add("theme-" + selectedThemeName);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     SVG IMPRINT RENDERER — Draws realistic ground impressions on canvas
+     All shapes drawn as SVG-style Path2D objects for crisp rendering
+  ═══════════════════════════════════════════════════════════════════ */
+
+  /**
+   * Draw a human footprint imprint (heel + ball + 5 toe pads)
+   * Centered at (0,0), scaled by imprintScaleFactor
+   */
+  function drawHumanFootprintImprint(canvasContext, imprintScaleFactor) {
+    const scaledUnit = imprintScaleFactor;
+    canvasContext.beginPath();
+    /* Heel */
+    canvasContext.ellipse(0, scaledUnit * 0.6, scaledUnit * 0.28, scaledUnit * 0.22, 0, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Ball of foot */
+    canvasContext.beginPath();
+    canvasContext.ellipse(0, scaledUnit * 0.05, scaledUnit * 0.32, scaledUnit * 0.2, 0, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Arch connector */
+    canvasContext.beginPath();
+    canvasContext.ellipse(scaledUnit * 0.1, scaledUnit * 0.33, scaledUnit * 0.12, scaledUnit * 0.18, 0.2, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Five toe imprints */
+    const toePositions = [
+      { x: -0.28, y: -0.22 }, { x: -0.14, y: -0.32 },
+      { x:  0,    y: -0.35 }, { x:  0.14, y: -0.3  },
+      { x:  0.25, y: -0.2  }
+    ];
+    toePositions.forEach(function(toePosition) {
+      canvasContext.beginPath();
+      canvasContext.ellipse(
+        toePosition.x * scaledUnit, toePosition.y * scaledUnit,
+        scaledUnit * 0.07, scaledUnit * 0.08, 0, 0, Math.PI * 2
+      );
+      canvasContext.fill();
+    });
+  }
+
+  /**
+   * Draw an animal paw imprint (large central pad + 4 toe pads)
+   */
+  function drawAnimalPawImprint(canvasContext, imprintScaleFactor) {
+    const scaledUnit = imprintScaleFactor;
+    /* Central pad */
+    canvasContext.beginPath();
+    canvasContext.ellipse(0, scaledUnit * 0.2, scaledUnit * 0.32, scaledUnit * 0.28, 0, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Four surrounding toe pads */
+    const pawToePositions = [
+      { x: -0.28, y: -0.18, rx: 0.13, ry: 0.11 },
+      { x: -0.1,  y: -0.38, rx: 0.12, ry: 0.1  },
+      { x:  0.1,  y: -0.38, rx: 0.12, ry: 0.1  },
+      { x:  0.28, y: -0.18, rx: 0.13, ry: 0.11 }
+    ];
+    pawToePositions.forEach(function(pawToeItem) {
+      canvasContext.beginPath();
+      canvasContext.ellipse(
+        pawToeItem.x * scaledUnit, pawToeItem.y * scaledUnit,
+        pawToeItem.rx * scaledUnit, pawToeItem.ry * scaledUnit,
+        0, 0, Math.PI * 2
+      );
+      canvasContext.fill();
+    });
+  }
+
+  /**
+   * Draw a deer hoof (cloven hoofprint) imprint — two split teardrop shapes
+   */
+  function drawDeerHoofprintImprint(canvasContext, imprintScaleFactor) {
+    const scaledUnit = imprintScaleFactor;
+    /* Left hoof half */
+    canvasContext.beginPath();
+    canvasContext.ellipse(-scaledUnit * 0.14, 0, scaledUnit * 0.13, scaledUnit * 0.35, -0.15, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Right hoof half */
+    canvasContext.beginPath();
+    canvasContext.ellipse(scaledUnit * 0.14, 0, scaledUnit * 0.13, scaledUnit * 0.35, 0.15, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Small dew claw dots above */
+    canvasContext.beginPath();
+    canvasContext.arc(-scaledUnit * 0.18, -scaledUnit * 0.44, scaledUnit * 0.055, 0, Math.PI * 2);
+    canvasContext.fill();
+    canvasContext.beginPath();
+    canvasContext.arc(scaledUnit * 0.18, -scaledUnit * 0.44, scaledUnit * 0.055, 0, Math.PI * 2);
+    canvasContext.fill();
+  }
+
+  /**
+   * Draw a snake scale trail imprint — series of curved scale impressions
+   */
+  function drawSnakeScaleTrailImprint(canvasContext, imprintScaleFactor) {
+    const scaledUnit = imprintScaleFactor;
+    const numberOfScaleRows = 6;
+    for (let scaleRowIndex = 0; scaleRowIndex < numberOfScaleRows; scaleRowIndex++) {
+      const rowYOffset      = (scaleRowIndex - numberOfScaleRows / 2) * scaledUnit * 0.22;
+      const rowXOffset      = Math.sin(scaleRowIndex * 0.9) * scaledUnit * 0.25;
+      const scalesPerRow    = 3;
+      for (let scaleIndex = 0; scaleIndex < scalesPerRow; scaleIndex++) {
+        const scaleXPos = rowXOffset + (scaleIndex - 1) * scaledUnit * 0.22;
+        canvasContext.beginPath();
+        canvasContext.ellipse(scaleXPos, rowYOffset, scaledUnit * 0.09, scaledUnit * 0.055, 0.3, 0, Math.PI * 2);
+        canvasContext.fill();
+      }
+    }
+  }
+
+  /**
+   * Draw an elephant stomp imprint — large rounded oval with subtle toe bumps
+   */
+  function drawElephantStompImprint(canvasContext, imprintScaleFactor) {
+    const scaledUnit = imprintScaleFactor;
+    /* Main large rounded pad */
+    canvasContext.beginPath();
+    canvasContext.ellipse(0, scaledUnit * 0.1, scaledUnit * 0.55, scaledUnit * 0.48, 0, 0, Math.PI * 2);
+    canvasContext.fill();
+    /* Four subtle toe nail impressions along front edge */
+    const elephantToePositions = [
+      { x: -0.38, y: -0.32 }, { x: -0.16, y: -0.48 },
+      { x:  0.16, y: -0.48 }, { x:  0.38, y: -0.32 }
+    ];
+    elephantToePositions.forEach(function(elephantToeItem) {
+      canvasContext.beginPath();
+      canvasContext.ellipse(
+        elephantToeItem.x * scaledUnit, elephantToeItem.y * scaledUnit,
+        scaledUnit * 0.1, scaledUnit * 0.075, 0, 0, Math.PI * 2
+      );
+      canvasContext.fill();
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     FOOTPRINT ANIMATION ENGINE — Canvas lifecycle management
+  ═══════════════════════════════════════════════════════════════════ */
+
+  const footprintCanvasElement      = document.getElementById("footprint-canvas");
+  const footprintCanvasContext      = footprintCanvasElement.getContext("2d");
+  const activeImprintInstancesList  = [];
+
+  /* Maps imprint type names to their drawing functions */
+  const imprintTypeDrawingFunctions = {
+    humanFootprint:   drawHumanFootprintImprint,
+    animalPaw:        drawAnimalPawImprint,
+    deerHoofprint:    drawDeerHoofprintImprint,
+    snakeScaleTrail:  drawSnakeScaleTrailImprint,
+    elephantStomp:    drawElephantStompImprint
+  };
+  const availableImprintTypeKeys = Object.keys(imprintTypeDrawingFunctions);
+
+  /** Resize canvas dimensions to match current viewport */
+  function resizeFootprintCanvasToViewport() {
+    footprintCanvasElement.width  = window.innerWidth;
+    footprintCanvasElement.height = window.innerHeight;
+  }
+
+  /** Get the hero section bounding rect expanded by safety buffer */
+  function getHeroSectionSafeZoneBounds() {
+    const heroSectionElement  = document.getElementById("hero-section");
+    const heroSectionRect     = heroSectionElement.getBoundingClientRect();
+    const safetyBufferPx      = SITE_CONFIG.animation.heroSafetyBufferPx;
+    return {
+      leftEdge:   heroSectionRect.left   - safetyBufferPx,
+      topEdge:    heroSectionRect.top    - safetyBufferPx,
+      rightEdge:  heroSectionRect.right  + safetyBufferPx,
+      bottomEdge: heroSectionRect.bottom + safetyBufferPx
+    };
+  }
+
+  /** Get the buttons section bounding rect expanded by safety buffer */
+  function getButtonSectionSafeZoneBounds() {
+    const buttonSectionElement = document.getElementById("theme-toggle-section");
+    const buttonSectionRect    = buttonSectionElement.getBoundingClientRect();
+    const safetyBufferPx       = SITE_CONFIG.animation.heroSafetyBufferPx;
+    return {
+      leftEdge:   buttonSectionRect.left   - safetyBufferPx,
+      topEdge:    buttonSectionRect.top    - safetyBufferPx,
+      rightEdge:  buttonSectionRect.right  + safetyBufferPx,
+      bottomEdge: buttonSectionRect.bottom + safetyBufferPx
+    };
+  }
+
+  /** Check if a coordinate is inside any safe zone (hero or buttons) */
+  function isCoordinateInsideAnySafeZone(xCoordinate, yCoordinate) {
+    const heroSafeZone   = getHeroSectionSafeZoneBounds();
+    const buttonSafeZone = getButtonSectionSafeZoneBounds();
+
+    const isInsideHeroZone = (
+      xCoordinate > heroSafeZone.leftEdge   && xCoordinate < heroSafeZone.rightEdge &&
+      yCoordinate > heroSafeZone.topEdge    && yCoordinate < heroSafeZone.bottomEdge
+    );
+    const isInsideButtonZone = (
+      xCoordinate > buttonSafeZone.leftEdge   && xCoordinate < buttonSafeZone.rightEdge &&
+      yCoordinate > buttonSafeZone.topEdge    && yCoordinate < buttonSafeZone.bottomEdge
+    );
+    return isInsideHeroZone || isInsideButtonZone;
+  }
+
+  /** Generate a random screen position guaranteed outside all safe zones */
+  function generateRandomPositionOutsideSafeZones() {
+    let candidateX, candidateY;
+    let safePositionAttemptCount = 0;
+    do {
+      candidateX = Math.random() * window.innerWidth;
+      candidateY = Math.random() * window.innerHeight;
+      safePositionAttemptCount++;
+    } while (isCoordinateInsideAnySafeZone(candidateX, candidateY) && safePositionAttemptCount < 60);
+    return { x: candidateX, y: candidateY };
+  }
+
+  /** Spawn a new imprint instance and add to the active list */
+  function spawnNewImprintInstance() {
+    if (activeImprintInstancesList.length >= SITE_CONFIG.animation.maximumSimultaneousImprints) return;
+
+    const animationConfig        = SITE_CONFIG.animation;
+    const safeSpawnPosition      = generateRandomPositionOutsideSafeZones();
+    const randomImprintTypeKey   = availableImprintTypeKeys[Math.floor(Math.random() * availableImprintTypeKeys.length)];
+    const randomScaleSizePx      = animationConfig.imprintMinSizePx + Math.random() * (animationConfig.imprintMaxSizePx - animationConfig.imprintMinSizePx);
+    const randomRotationAngle    = Math.random() * 360;
+    const totalLifespanMs        = animationConfig.fadeInDurationMs + animationConfig.holdVisibleDurationMs + animationConfig.fadeOutDurationMs;
+
+    activeImprintInstancesList.push({
+      imprintTypeKey:    randomImprintTypeKey,
+      xPosition:         safeSpawnPosition.x,
+      yPosition:         safeSpawnPosition.y,
+      scaleSizePx:       randomScaleSizePx,
+      rotationAngleDeg:  randomRotationAngle,
+      spawnTimestampMs:  performance.now(),
+      totalLifespanMs:   totalLifespanMs,
+      currentOpacity:    0
+    });
+  }
+
+  /** Calculate current opacity value for an imprint based on its lifecycle phase */
+  function calculateCurrentImprintOpacity(imprintInstance, currentTimestampMs) {
+    const animationConfig   = SITE_CONFIG.animation;
+    const elapsedTimeMs     = currentTimestampMs - imprintInstance.spawnTimestampMs;
+    const fadeInEndMs       = animationConfig.fadeInDurationMs;
+    const holdEndMs         = fadeInEndMs + animationConfig.holdVisibleDurationMs;
+    const totalLifespanMs   = imprintInstance.totalLifespanMs;
+
+    if (elapsedTimeMs < fadeInEndMs) {
+      return elapsedTimeMs / fadeInEndMs;                               /* fading in phase */
+    } else if (elapsedTimeMs < holdEndMs) {
+      return 1;                                                          /* fully visible phase */
+    } else if (elapsedTimeMs < totalLifespanMs) {
+      return 1 - (elapsedTimeMs - holdEndMs) / animationConfig.fadeOutDurationMs; /* fading out phase */
+    }
+    return 0;                                                            /* expired */
+  }
+
+  /** Get the current imprint fill color from CSS theme variables */
+  function getCurrentImprintFillColor() {
+    return getComputedStyle(document.body).getPropertyValue("--color-imprint").trim();
+  }
+
+  /** Main canvas animation loop — called every frame via requestAnimationFrame */
+  function renderAllImprintsAnimationFrame(currentTimestampMs) {
+    footprintCanvasContext.clearRect(0, 0, footprintCanvasElement.width, footprintCanvasElement.height);
+
+    /* Remove expired imprint instances from the back of the list */
+    for (let imprintIndex = activeImprintInstancesList.length - 1; imprintIndex >= 0; imprintIndex--) {
+      const imprintInstance = activeImprintInstancesList[imprintIndex];
+      if ((currentTimestampMs - imprintInstance.spawnTimestampMs) >= imprintInstance.totalLifespanMs) {
+        activeImprintInstancesList.splice(imprintIndex, 1);
+      }
+    }
+
+    const currentFillColor = getCurrentImprintFillColor();
+
+    /* Draw each active imprint instance */
+    activeImprintInstancesList.forEach(function(imprintInstance) {
+      const calculatedOpacity     = calculateCurrentImprintOpacity(imprintInstance, currentTimestampMs);
+      const imprintDrawingFunction = imprintTypeDrawingFunctions[imprintInstance.imprintTypeKey];
+
+      footprintCanvasContext.save();
+      footprintCanvasContext.globalAlpha = calculatedOpacity;
+      footprintCanvasContext.fillStyle   = currentFillColor;
+      footprintCanvasContext.translate(imprintInstance.xPosition, imprintInstance.yPosition);
+      footprintCanvasContext.rotate(imprintInstance.rotationAngleDeg * Math.PI / 180);
+      imprintDrawingFunction(footprintCanvasContext, imprintInstance.scaleSizePx);
+      footprintCanvasContext.restore();
+    });
+
+    requestAnimationFrame(renderAllImprintsAnimationFrame);
+  }
+
+  /** Start the repeating interval that spawns new imprint instances */
+  function startImprintSpawnInterval() {
+    setInterval(spawnNewImprintInstance, SITE_CONFIG.animation.newImprintSpawnIntervalMs);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     INITIALIZER — Boot all systems on DOM ready
+  ═══════════════════════════════════════════════════════════════════ */
+  function initializeEntirePage() {
+    populateHeroSectionContent();
+    populateSocialHandleLinks();
+    populateFooterContent();
+    resizeFootprintCanvasToViewport();
+    startImprintSpawnInterval();
+    requestAnimationFrame(renderAllImprintsAnimationFrame);
+  }
+
+  window.addEventListener("resize", resizeFootprintCanvasToViewport);
+  document.addEventListener("DOMContentLoaded", initializeEntirePage);
+</script>
+</body>
+</html>
